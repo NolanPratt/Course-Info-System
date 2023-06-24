@@ -61,6 +61,7 @@ vector<vector<string>> Parse::parseContent(string filename) {
     // If the file successfully opened
     if (file.is_open()) {
         if (file.good()) {
+
             // While the file is open
             while (getline(file, line)) {
                 // Store each line
@@ -82,6 +83,12 @@ vector<vector<string>> Parse::parseContent(string filename) {
                 content.push_back(row);
             }
         }
+        else {
+            throw Error(std::string("Failed to open ").append(filename));
+        }
+    }
+    else {
+        cout << "File not found in working directory." << endl << endl;
     }
     return content;
 }
