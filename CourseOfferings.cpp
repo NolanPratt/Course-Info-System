@@ -33,229 +33,55 @@ public:
     }
 };
 
-// Class to handle Row traversal
-class Row
-{
+// Class to handling parsing the file
+class Parse {
 public:
-    Row(const std::vector<std::string>&);
-
-public:
-    unsigned int size(void) const;
-    void push(const std::string&);
-
-private:
-    const std::vector<std::string> _header;
-    std::vector<std::string> _values;
-
-public:
-
-    template<typename T>
-    const T getValue(unsigned int pos) const
-    {
-        if (pos < _values.size())
-        {
-            T res;
-            std::stringstream ss;
-            ss << _values[pos];
-            ss >> res;
-            return res;
-        }
-        throw Error("can't return this value (doesn't exist)");
-    }
-    const std::string operator[](unsigned int) const;
-    const std::string operator[](const std::string& valueName) const;
-};
-
-// Enum for parse differentiation
-enum DataType {
-    eFILE = 0,
-    ePURE = 1
-};
-
-// Class to handle parsing the file
-class Parser
-{
-
-public:
-    Parser(const std::string&, const DataType& type = eFILE, char sep = ',');
-
-public:
-    Row& getRow(unsigned int row) const;
-    unsigned int rowCount(void) const;
-    unsigned int columnCount(void) const;
-    std::vector<std::string> getHeader(void) const;
-
-protected:
-    void parseHeader(void);
-    void parseContent(void);
-
-private:
-    std::string _file;
-    const DataType _type;
-    const char _sep;
-    std::vector<std::string> _originalFile;
-    std::vector<std::string> _header;
-    std::vector<Row*> _content;
-
-public:
-    Row& operator[](unsigned int row) const;
+    Parse();
+    vector<vector<string>> parseContent(string filename);
 };
 
 // Constructor
-Parser::Parser(const std::string& data, const DataType& type, char sep)
-    : _type(type), _sep(sep)
-{
-    std::string line;
-    if (type == eFILE)
-    {
-        _file = data;
-        std::ifstream ifile(_file.c_str());
-        if (ifile.is_open())
-        {
-            while (ifile.good())
-            {
-                getline(ifile, line);
-                if (line != "")
-                    _originalFile.push_back(line);
-            }
-            ifile.close();
-
-            if (_originalFile.size() == 0)
-                throw Error(std::string("No Data in ").append(_file));
-
-            parseHeader();
-            parseContent();
-        }
-        else
-            throw Error(std::string("Failed to open ").append(_file));
-    }
-    else
-    {
-        std::istringstream stream(data);
-        while (std::getline(stream, line))
-            if (line != "")
-                _originalFile.push_back(line);
-        if (_originalFile.size() == 0)
-            throw Error(std::string("No Data in pure content"));
-
-        parseHeader();
-        parseContent();
-    }
+Parse::Parse() {
+    
 }
 
-// Parse the first line of the file
-void Parser::parseHeader(void)
-{
-    std::stringstream ss(_originalFile[0]);
-    std::string item;
+// Parse the file contents
+vector<vector<string>> Parse::parseContent(string filename) {
+    // 2d vector for storing line elements
+    vector<vector<string>> content;
 
-    while (std::getline(ss, item, _sep))
-        _header.push_back(item);
-}
+    // String element to track line elements
+    string line;
 
-// Parse the contents of the file
-void Parser::parseContent(void)
-{
-    std::vector<std::string>::iterator it;
+    // Stream element for reading in file elements
+    ifstream file(filename.c_str());
 
-    it = _originalFile.begin();
-    //it++; // skip header
+    // If the file successfully opened
+    if (file.is_open()) {
+        if (file.good()) {
+            // While the file is open
+            while (getline(file, line)) {
+                // Store each line
+                vector<string> row;
 
-    for (; it != _originalFile.end(); it++)
-    {
-        bool quoted = false;
-        int tokenStart = 0;
-        unsigned int i = 0;
+                // Read in each line
+                stringstream line_stream(line);
 
-        Row* row = new Row(_header);
+                // Break each line into cells
+                string cell;
 
-        for (; i != it->length(); i++)
-        {
-            if (it->at(i) == '"')
-                quoted = ((quoted) ? (false) : (true));
-            else if (it->at(i) == ',' && !quoted)
-            {
-                row->push(it->substr(tokenStart, i - tokenStart));
-                tokenStart = i + 1;
+                // Until the current line ends
+                while (getline(line_stream, cell, ',')) {
+                    // Insert the cells into the row container
+                    row.push_back(cell);
+                }
+
+                // Insert the row into the rows containers
+                content.push_back(row);
             }
         }
-
-        //end
-        row->push(it->substr(tokenStart, it->length() - tokenStart));
-
-        // if value(s) missing
-        //if (row->size() != _header.size())
-            //throw Error("corrupted data !");
-        _content.push_back(row);
     }
-}
-
-// Return the memory address of the current position
-Row& Parser::getRow(unsigned int rowPosition) const
-{
-    if (rowPosition < _content.size())
-        return *(_content[rowPosition]);
-    throw Error("can't return this row (doesn't exist)");
-}
-Row& Parser::operator[](unsigned int rowPosition) const
-{
-    return Parser::getRow(rowPosition);
-}
-
-// Return the count of file records
-unsigned int Parser::rowCount(void) const
-{
-    return _content.size();
-}
-
-// Return the count of file fields
-unsigned int Parser::columnCount(void) const
-{
-    return _header.size();
-}
-
-// Return the first line of the file
-std::vector<std::string> Parser::getHeader(void) const
-{
-    return _header;
-}
-
-// Constructor
-Row::Row(const std::vector<std::string>& header)
-    : _header(header) {}
-
-// Return the size of the current row
-unsigned int Row::size(void) const
-{
-    return _values.size();
-}
-
-// Add the current element to the list container
-void Row::push(const std::string& value)
-{
-    _values.push_back(value);
-}
-
-// Return the current string element
-const std::string Row::operator[](unsigned int valuePosition) const
-{
-    if (valuePosition < _values.size())
-        return _values[valuePosition];
-    throw Error("can't return this value (doesn't exist)");
-}
-const std::string Row::operator[](const std::string& key) const
-{
-    std::vector<std::string>::const_iterator it;
-    int pos = 0;
-
-    for (it = _header.begin(); it != _header.end(); it++)
-    {
-        if (key == *it)
-            return _values[pos];
-        pos++;
-    }
-
-    throw Error("can't return this value (doesn't exist)");
+    return content;
 }
 
 //============================================================================
@@ -454,31 +280,32 @@ void loadCourses(string csvPath, BinarySearchTree* tree) {
     cout << "Loading CSV file " << csvPath << endl << endl;;
 
     // initialize the CSV Parser
-    Parser file = Parser(csvPath);
+    Parse file;
+    vector<vector<string>> content = file.parseContent(csvPath);
 
     try {
         // Read through the rows
-        for (unsigned i = 0; i < file.rowCount(); i++) {
-            
+        for (unsigned i = 0; i < content.size(); i++) {
+
             // initialize a Course using data from current row (i)
             Course course;
-            course.courseNum = file[i][0];
-            course.courseTitle = file[i][1];
+            course.courseNum = content[i][0];
+            course.courseTitle = content[i][1];
 
             // For each prereq within the current row
-            for (unsigned j = 2; j < file.columnCount(); j++) {
+            for (unsigned j = 2; j < content[i].size(); j++) {
 
                 // Store current prerequisite
-                string prerequisite = file[i][j];
+                string prerequisite = content[i][j];
 
                 // Remove leading spaces
                 prerequisite.erase(0, prerequisite.find_first_not_of(' ')); 
 
                 // Loop through other rows to find a match
-                for (unsigned k = 0; k < file.rowCount(); k++) {
+                for (unsigned k = 0; k < content.size(); k++) {
 
                     // If the course ID is found
-                    if (i != k && file[k][0] == prerequisite) {
+                    if (i != k && content[k][0] == prerequisite) {
 
                         // Insert match into current course prereqs
                         course.Prereqs.push_back(prerequisite);
@@ -486,8 +313,11 @@ void loadCourses(string csvPath, BinarySearchTree* tree) {
                     }
                 }
             }
-            // Insert populated course into the tree
-            tree->Insert(course);
+
+            if (!(course.courseNum == "courseId" || course.courseNum == "courseNum")) {
+                // Insert populated course into the tree
+                tree->Insert(course);
+            }
         }
     }
     catch (Error& e) {
