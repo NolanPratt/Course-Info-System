@@ -10,19 +10,16 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
-#include <stdexcept>
 #include <string>
 #include <vector>
-#include <list>
 
 using namespace std;
 
 //============================================================================
-// CSVParser Logic
+// CSV Parser Logic
 //============================================================================
 
-// Class to handle reading errors
+// Class for handle file reading errors
 class Error : public std::runtime_error
 {
 
@@ -33,7 +30,7 @@ public:
     }
 };
 
-// Class to handling parsing the file
+// Class for handling file parsing
 class Parse {
 public:
     Parse();
@@ -45,7 +42,12 @@ Parse::Parse() {
     
 }
 
-// Parse the file contents
+/*
+* Parse the file contents
+* 
+* @return 2d vector containing indexed file lines
+* @param filename, filename of the CSV file
+*/
 vector<vector<string>> Parse::parseContent(string filename) {
     // 2d vector for storing line elements
     vector<vector<string>> content;
@@ -286,35 +288,46 @@ void loadCourses(string csvPath, BinarySearchTree* tree) {
     try {
         // Read through the rows
         for (unsigned i = 0; i < content.size(); i++) {
-
-            // initialize a Course using data from current row (i)
+            // Empty course for placement
             Course course;
-            course.courseNum = content[i][0];
-            course.courseTitle = content[i][1];
 
-            // For each prereq within the current row
-            for (unsigned j = 2; j < content[i].size(); j++) {
+            if (content[i][0] != "") {
 
-                // Store current prerequisite
-                string prerequisite = content[i][j];
+                // Check if the course is already in the tree to avoid data duplication
+                if (tree->Search(content[i][0]).courseNum != "") {
+                    continue;
+                }
 
-                // Remove leading spaces
-                prerequisite.erase(0, prerequisite.find_first_not_of(' ')); 
+                // initialize a Course using data from current row (i)
+                course.courseNum = content[i][0];
+                course.courseTitle = content[i][1];
 
-                // Loop through other rows to find a match
-                for (unsigned k = 0; k < content.size(); k++) {
+                // For each prereq within the current row
+                for (unsigned j = 2; j < content[i].size(); j++) {
 
-                    // If the course ID is found
-                    if (i != k && content[k][0] == prerequisite) {
+                    // Store current prerequisite
+                    string prerequisite = content[i][j];
 
-                        // Insert match into current course prereqs
-                        course.Prereqs.push_back(prerequisite);
-                        break;
+                    // Remove trailing and leading spaces
+                    prerequisite.erase(0, prerequisite.find_first_not_of(' '));
+                    prerequisite.erase(prerequisite.find_last_not_of(' ') + 1);
+
+                    // Loop through other rows to find a match
+                    for (unsigned k = 0; k < content.size(); k++) {
+
+                        // If the course ID is found
+                        if (content[k][0] == prerequisite && i != k && prerequisite != "") {
+
+                            // Insert match into current course prereqs
+                            course.Prereqs.push_back(prerequisite);
+                            break;
+                        }
                     }
                 }
             }
 
-            if (!(course.courseNum == "courseId" || course.courseNum == "courseNum")) {
+            // If the courseNum is not the header nor blank
+            if (!(course.courseNum == "courseId" || course.courseNum == "courseNum" || course.courseNum == "")) {
                 // Insert populated course into the tree
                 tree->Insert(course);
             }
