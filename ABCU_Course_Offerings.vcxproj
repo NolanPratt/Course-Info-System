@@ -128,13 +128,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CourseOfferings.cpp" />
-    <ClCompile Include="CSVparser.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="License.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CSVparser.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Base.csv" />
