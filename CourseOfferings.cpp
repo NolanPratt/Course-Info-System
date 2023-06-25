@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Course_Offerings.cpp
 // Author      : Nolan Pratt
-// Version     : 1.0
+// Version     : 2.0
 // Description : Solution for reading in course information from a CSV file
 //               and storing elements within a binary search tree for use
 //               within an academic portal environment
@@ -137,9 +137,7 @@ public:
     void InOrder();
 };
 
-/*
-* Constructor
-*/
+// Constructor
 BinarySearchTree::BinarySearchTree() {
     root = nullptr;
 }
